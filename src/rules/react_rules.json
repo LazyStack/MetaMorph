@@ -1,0 +1,47 @@
+{
+  "language": "react",
+  "rules": [
+    {
+      "id": "RX000",
+      "title": "File could not be parsed",
+      "description": "The file could not be parsed as JavaScript/JSX, so it cannot be analysed or rewritten automatically.",
+      "autofix_supported": false,
+      "default_risk": "high"
+    },
+    {
+      "id": "RX001",
+      "title": "Class component",
+      "description": "Class components should become function components with hooks. Simple render-only classes are converted automatically; classes with state or lifecycle methods need a human.",
+      "autofix_supported": true,
+      "default_risk": "medium"
+    },
+    {
+      "id": "RX002",
+      "title": "Lifecycle method -> useEffect",
+      "description": "componentDidMount / componentDidUpdate / componentWillUnmount map to useEffect, but the dependency array and cleanup must be designed by hand.",
+      "autofix_supported": false,
+      "default_risk": "medium"
+    },
+    {
+      "id": "RX003",
+      "title": "Unsafe legacy lifecycle",
+      "description": "componentWillMount / componentWillReceiveProps / componentWillUpdate (and UNSAFE_ variants) are deprecated and unsafe with concurrent rendering. They usually need a redesign (derived state, effects, or memoisation).",
+      "autofix_supported": false,
+      "default_risk": "high"
+    },
+    {
+      "id": "RX004",
+      "title": "defaultProps on a function component",
+      "description": "`Comp.defaultProps = {...}` is deprecated for function components (removed in React 19). Use default values in the destructured props parameter.",
+      "autofix_supported": true,
+      "default_risk": "low"
+    },
+    {
+      "id": "RX005",
+      "title": "PropTypes runtime checking",
+      "description": "PropTypes are ignored by React 19 and are better expressed as TypeScript types. Migrating to TypeScript is a project-level decision, so this is flagged for review with a suggested interface.",
+      "autofix_supported": false,
+      "default_risk": "low"
+    }
+  ]
+}

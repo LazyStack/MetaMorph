@@ -1,0 +1,68 @@
+{
+  "language": "python",
+  "rules": [
+    {
+      "id": "PY000",
+      "title": "File could not be parsed",
+      "description": "The file is not valid Python 3 (often leftover Python 2 syntax such as `except X, e:` or `print x`). It cannot be analysed or rewritten automatically.",
+      "autofix_supported": false,
+      "default_risk": "high"
+    },
+    {
+      "id": "PY001",
+      "title": "Old %-style string formatting",
+      "description": "`\"Hello %s\" % name` should become an f-string: `f\"Hello {name}\"`.",
+      "autofix_supported": true,
+      "default_risk": "low"
+    },
+    {
+      "id": "PY002",
+      "title": "dict.has_key() call",
+      "description": "`d.has_key(k)` was removed from dict in Python 3; use `k in d`.",
+      "autofix_supported": true,
+      "default_risk": "medium"
+    },
+    {
+      "id": "PY003",
+      "title": "Bare except clause",
+      "description": "`except:` also catches SystemExit and KeyboardInterrupt; use `except Exception:`.",
+      "autofix_supported": true,
+      "default_risk": "medium"
+    },
+    {
+      "id": "PY004",
+      "title": "Explicit `object` base class",
+      "description": "`class Foo(object):` is redundant in Python 3; use `class Foo:`.",
+      "autofix_supported": true,
+      "default_risk": "low"
+    },
+    {
+      "id": "PY005",
+      "title": "Old-style super() call",
+      "description": "`super(Foo, self).method()` can be written `super().method()` in Python 3.",
+      "autofix_supported": true,
+      "default_risk": "low"
+    },
+    {
+      "id": "PY006",
+      "title": "Deprecated typing aliases",
+      "description": "`typing.List`, `Dict`, `Tuple`, `Set`, `Optional`, `Union` can be replaced by `list`, `dict`, `tuple`, `set`, `X | None`, `A | B` (Python 3.10+).",
+      "autofix_supported": true,
+      "default_risk": "low"
+    },
+    {
+      "id": "PY007",
+      "title": "Missing type hints",
+      "description": "Function parameters or return value have no type annotations. Correct hints need human understanding of the code, so this is never auto-fixed.",
+      "autofix_supported": false,
+      "default_risk": "medium"
+    },
+    {
+      "id": "PY008",
+      "title": "Python 2 except syntax",
+      "description": "`except ValueError, e:` is a syntax error in Python 3; use `except ValueError as e:`.",
+      "autofix_supported": true,
+      "default_risk": "low"
+    }
+  ]
+}

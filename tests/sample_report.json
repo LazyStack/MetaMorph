@@ -1,0 +1,963 @@
+{
+  "run": {
+    "repo": "src/demo_repo",
+    "workdir": "build/migrated",
+    "started": "2026-10-05 21:08",
+    "files_scanned": {
+      "python": 6,
+      "react": 5
+    },
+    "analyzer": "offline (cached Claude verdicts, rule-based fallback when no cache entry)",
+    "verdict_sources": {
+      "claude": 0,
+      "cache": 0,
+      "fallback": 43
+    },
+    "max_risk": "low",
+    "duration": 35.05796099999861,
+    "tests": {
+      "baseline": {
+        "pytest": {
+          "suite": "pytest",
+          "passed": true,
+          "summary": "10 passed in 0.05s",
+          "duration": 0.84,
+          "output_tail": "..........                                                               [100%]\n10 passed in 0.05s"
+        },
+        "jest": {
+          "suite": "jest",
+          "passed": true,
+          "summary": "7 passed, 7 total",
+          "duration": 5.22,
+          "output_tail": "PASS react/__tests__/components.test.jsx\n\nTest Suites: 1 passed, 1 total\nTests:       7 passed, 7 total\nSnapshots:   0 total\nTime:        1.536 s, estimated 2 s"
+        }
+      },
+      "final": {
+        "pytest": {
+          "suite": "pytest",
+          "passed": true,
+          "summary": "10 passed in 0.05s",
+          "duration": 0.77,
+          "output_tail": "..........                                                               [100%]\n10 passed in 0.05s"
+        },
+        "jest": {
+          "suite": "jest",
+          "passed": true,
+          "summary": "7 passed, 7 total",
+          "duration": 4.71,
+          "output_tail": "PASS react/__tests__/components.test.jsx\n\nTest Suites: 1 passed, 1 total\nTests:       7 passed, 7 total\nSnapshots:   0 total\nTime:        1.531 s, estimated 2 s"
+        }
+      },
+      "runs_during_fixing": 15
+    },
+    "diffs": {
+      "python/scripts/import_job.py": "--- a/python/scripts/import_job.py\n+++ b/python/scripts/import_job.py\n@@ -7,6 +7,6 @@\n     try:\n         with open(path) as fh:\n             rows = list(csv.DictReader(fh))\n-    except IOError, e:\n-        print(\"could not read %s: %s\" % (path, e))\n+    except IOError as e:\n+        print(f\"could not read {path}: {e}\")\n     return rows\n",
+      "python/shop/inventory.py": "--- a/python/shop/inventory.py\n+++ b/python/shop/inventory.py\n@@ -1,8 +1,7 @@\n \"\"\"Product catalogue and stock levels.\"\"\"\n-from typing import Dict, List, Optional\n \n \n-class Product(object):\n+class Product:\n     def __init__(self, sku, name, price, qty):\n         self.sku = sku\n         self.name = name\n@@ -10,7 +9,7 @@\n         self.qty = qty\n \n     def label(self):\n-        return \"%s (%s) - $%.2f\" % (self.name, self.sku, self.price)\n+        return f\"{self.name} ({self.sku}) - ${self.price:.2f}\"\n \n     def value(self):\n         return self.price * self.qty\n@@ -18,25 +17,25 @@\n \n class PerishableProduct(Product):\n     def __init__(self, sku, name, price, qty, days_left):\n-        super(PerishableProduct, self).__init__(sku, name, price, qty)\n+        super().__init__(sku, name, price, qty)\n         self.days_left = days_left\n \n     def label(self):\n-        base = super(PerishableProduct, self).label()\n-        return \"%s [expires in %d days]\" % (base, self.days_left)\n+        base = super().label()\n+        return f\"{base} [expires in {self.days_left:d} days]\"\n \n \n-class Inventory(object):\n+class Inventory:\n     def __init__(self):\n-        self._items: Dict[str, Product] = {}\n+        self._items: dict[str, Product] = {}\n \n     def add(self, product: Product) -> None:\n         self._items[product.sku] = product\n \n-    def find(self, sku: str) -> Optional[Product]:\n+    def find(self, sku: str) -> Product | None:\n         return self._items.get(sku)\n \n-    def skus(self) -> List[str]:\n+    def skus(self) -> list[str]:\n         return sorted(self._items)\n \n     def total_value(self):\n",
+      "python/shop/legacy_config.py": "--- a/python/shop/legacy_config.py\n+++ b/python/shop/legacy_config.py\n@@ -4,7 +4,7 @@\n \"\"\"\n \n \n-class LegacyConfig(object):\n+class LegacyConfig:\n     def __init__(self, values):\n         self._values = dict(values)\n \n",
+      "python/shop/reports.py": "--- a/python/shop/reports.py\n+++ b/python/shop/reports.py\n@@ -2,7 +2,7 @@\n \n \n def format_row(name, qty):\n-    return \"%-10s|%5d\" % (name, qty)\n+    return f\"{name!s:<10}|{qty:5d}\"\n \n \n def average_stock(inventory):\n@@ -19,4 +19,4 @@\n \n \n def report_header(title, count):\n-    return \"== %s (%d items) ==\" % (title, count)\n+    return f\"== {title} ({count:d} items) ==\"\n",
+      "react/components/Badge.jsx": "--- a/react/components/Badge.jsx\n+++ b/react/components/Badge.jsx\n@@ -1,12 +1,7 @@\n import React from \"react\";\n \n-export function Badge({ label, color, size }) {\n+export function Badge({ label, color = \"grey\", size = \"md\" }) {\n   return (\n     <span className={`badge badge-${color} badge-${size}`}>{label}</span>\n   );\n }\n-\n-Badge.defaultProps = {\n-  color: \"grey\",\n-  size: \"md\",\n-};\n",
+      "react/components/UserCard.jsx": "--- a/react/components/UserCard.jsx\n+++ b/react/components/UserCard.jsx\n@@ -1,7 +1,7 @@\n import React from \"react\";\n import PropTypes from \"prop-types\";\n \n-const UserCard = ({ user, tags, onSelect }) => (\n+const UserCard = ({ user, tags = [], onSelect = () => {} }) => (\n   <div className=\"user-card\" onClick={() => onSelect(user.id)}>\n     <strong>{user.name}</strong>\n     <ul>\n@@ -18,9 +18,4 @@\n   onSelect: PropTypes.func,\n };\n \n-UserCard.defaultProps = {\n-  tags: [],\n-  onSelect: () => {},\n-};\n-\n export default UserCard;\n"
+    }
+  },
+  "findings": [
+    {
+      "rule_id": "PY007",
+      "language": "python",
+      "file": "python/scripts/import_job.py",
+      "line": 5,
+      "column": 0,
+      "end_line": 12,
+      "snippet": "def read_rows(path):",
+      "message": "Function `read_rows` has parameters without hints: path; no return type.",
+      "verdict": {
+        "safe_to_autofix": false,
+        "risk_level": "medium",
+        "explanation": "Function parameters or return value have no type annotations. Correct hints need human understanding of the code, so this is never auto-fixed. (No API key; used the rule's default risk.)",
+        "suggested_fix": "",
+        "source": "fallback"
+      },
+      "status": "needs_review",
+      "status_detail": "Rule is review-only (no safe mechanical rewrite exists).",
+      "extra": {}
+    },
+    {
+      "rule_id": "PY008",
+      "language": "python",
+      "file": "python/scripts/import_job.py",
+      "line": 10,
+      "column": 4,
+      "end_line": 11,
+      "snippet": "    except IOError, e:",
+      "message": "Uses Python 2 `except X, e:` syntax.",
+      "verdict": {
+        "safe_to_autofix": true,
+        "risk_level": "low",
+        "explanation": "`except ValueError, e:` is a syntax error in Python 3; use `except ValueError as e:`. (No API key; used the rule's default risk.)",
+        "suggested_fix": "--- a/python/scripts/import_job.py\n+++ b/python/scripts/import_job.py\n@@ -7,6 +7,6 @@\n     try:\n         with open(path) as fh:\n             rows = list(csv.DictReader(fh))\n-    except IOError, e:\n+    except IOError as e:\n         print(\"could not read %s: %s\" % (path, e))\n     return rows\n",
+        "source": "fallback"
+      },
+      "status": "auto_fixed",
+      "status_detail": "10 passed in 0.05s",
+      "extra": {
+        "proposed_diff": "--- a/python/scripts/import_job.py\n+++ b/python/scripts/import_job.py\n@@ -7,6 +7,6 @@\n     try:\n         with open(path) as fh:\n             rows = list(csv.DictReader(fh))\n-    except IOError, e:\n+    except IOError as e:\n         print(\"could not read %s: %s\" % (path, e))\n     return rows\n"
+      }
+    },
+    {
+      "rule_id": "PY001",
+      "language": "python",
+      "file": "python/scripts/import_job.py",
+      "line": 11,
+      "column": 14,
+      "end_line": 11,
+      "snippet": "        print(\"could not read %s: %s\" % (path, e))",
+      "message": "String is formatted with the % operator.",
+      "verdict": {
+        "safe_to_autofix": true,
+        "risk_level": "low",
+        "explanation": "`\"Hello %s\" % name` should become an f-string: `f\"Hello {name}\"`. (No API key; used the rule's default risk.)",
+        "suggested_fix": "--- a/python/scripts/import_job.py\n+++ b/python/scripts/import_job.py\n@@ -8,5 +8,5 @@\n         with open(path) as fh:\n             rows = list(csv.DictReader(fh))\n     except IOError, e:\n-        print(\"could not read %s: %s\" % (path, e))\n+        print(f\"could not read {path}: {e}\")\n     return rows\n",
+        "source": "fallback"
+      },
+      "status": "auto_fixed",
+      "status_detail": "10 passed in 0.05s",
+      "extra": {
+        "proposed_diff": "--- a/python/scripts/import_job.py\n+++ b/python/scripts/import_job.py\n@@ -8,5 +8,5 @@\n         with open(path) as fh:\n             rows = list(csv.DictReader(fh))\n     except IOError, e:\n-        print(\"could not read %s: %s\" % (path, e))\n+        print(f\"could not read {path}: {e}\")\n     return rows\n"
+      }
+    },
+    {
+      "rule_id": "PY000",
+      "language": "python",
+      "file": "python/scripts/old_report.py",
+      "line": 4,
+      "column": 0,
+      "end_line": 4,
+      "snippet": "print \"Generating report for\", sys.argv[1]",
+      "message": "File is not valid Python 3: parser error: error at 4:29: expected one of !=, %, &, (, *, **, +, ,, -, ., /, //, :, ;, <, <<, <=, =, ==, >, >=, >>, @, NEWLINE, [, ^, and, if, in, is, not, or, |",
+      "verdict": {
+        "safe_to_autofix": false,
+        "risk_level": "high",
+        "explanation": "The file is not valid Python 3 (often leftover Python 2 syntax such as `except X, e:` or `print x`). It cannot be analysed or rewritten automatically. (No API key; used the rule's default risk.)",
+        "suggested_fix": "",
+        "source": "fallback"
+      },
+      "status": "needs_review",
+      "status_detail": "Rule is review-only (no safe mechanical rewrite exists).",
+      "extra": {}
+    },
+    {
+      "rule_id": "PY006",
+      "language": "python",
+      "file": "python/shop/inventory.py",
+      "line": 2,
+      "column": 0,
+      "end_line": 2,
+      "snippet": "from typing import Dict, List, Optional",
+      "message": "Imports deprecated typing aliases: Dict, List, Optional.",
+      "verdict": {
+        "safe_to_autofix": true,
+        "risk_level": "low",
+        "explanation": "`typing.List`, `Dict`, `Tuple`, `Set`, `Optional`, `Union` can be replaced by `list`, `dict`, `tuple`, `set`, `X | None`, `A | B` (Python 3.10+). (No API key; used the rule's default risk.)",
+        "suggested_fix": "--- a/python/shop/inventory.py\n+++ b/python/shop/inventory.py\n@@ -1,5 +1,4 @@\n \"\"\"Product catalogue and stock levels.\"\"\"\n-from typing import Dict, List, Optional\n \n \n class Product(object):\n@@ -28,15 +27,15 @@\n \n class Inventory(object):\n     def __init__(self):\n-        self._items: Dict[str, Product] = {}\n+        self._items: dict[str, Product] = {}\n \n     def add(self, product: Product) -> None:\n         self._items[product.sku] = product\n \n-    def find(self, sku: str) -> Optional[Product]:\n+    def find(self, sku: str) -> Product | None:\n         return self._items.get(sku)\n \n-    def skus(self) -> List[str]:\n+    def skus(self) -> list[str]:\n         return sorted(self._items)\n \n     def total_value(self):\n",
+        "source": "fallback"
+      },
+      "status": "auto_fixed",
+      "status_detail": "10 passed in 0.05s",
+      "extra": {
+        "proposed_diff": "--- a/python/shop/inventory.py\n+++ b/python/shop/inventory.py\n@@ -1,5 +1,4 @@\n \"\"\"Product catalogue and stock levels.\"\"\"\n-from typing import Dict, List, Optional\n \n \n class Product(object):\n@@ -28,15 +27,15 @@\n \n class Inventory(object):\n     def __init__(self):\n-        self._items: Dict[str, Product] = {}\n+        self._items: dict[str, Product] = {}\n \n     def add(self, product: Product) -> None:\n         self._items[product.sku] = product\n \n-    def find(self, sku: str) -> Optional[Product]:\n+    def find(self, sku: str) -> Product | None:\n         return self._items.get(sku)\n \n-    def skus(self) -> List[str]:\n+    def skus(self) -> list[str]:\n         return sorted(self._items)\n \n     def total_value(self):\n"
+      }
+    },
+    {
+      "rule_id": "PY004",
+      "language": "python",
+      "file": "python/shop/inventory.py",
+      "line": 5,
+      "column": 0,
+      "end_line": 16,
+      "snippet": "class Product(object):",
+      "message": "Class `Product` explicitly inherits from object.",
+      "verdict": {
+        "safe_to_autofix": true,
+        "risk_level": "low",
+        "explanation": "`class Foo(object):` is redundant in Python 3; use `class Foo:`. (No API key; used the rule's default risk.)",
+        "suggested_fix": "--- a/python/shop/inventory.py\n+++ b/python/shop/inventory.py\n@@ -2,7 +2,7 @@\n from typing import Dict, List, Optional\n \n \n-class Product(object):\n+class Product:\n     def __init__(self, sku, name, price, qty):\n         self.sku = sku\n         self.name = name\n",
+        "source": "fallback"
+      },
+      "status": "auto_fixed",
+      "status_detail": "10 passed in 0.05s",
+      "extra": {
+        "proposed_diff": "--- a/python/shop/inventory.py\n+++ b/python/shop/inventory.py\n@@ -2,7 +2,7 @@\n from typing import Dict, List, Optional\n \n \n-class Product(object):\n+class Product:\n     def __init__(self, sku, name, price, qty):\n         self.sku = sku\n         self.name = name\n"
+      }
+    },
+    {
+      "rule_id": "PY007",
+      "language": "python",
+      "file": "python/shop/inventory.py",
+      "line": 6,
+      "column": 4,
+      "end_line": 10,
+      "snippet": "    def __init__(self, sku, name, price, qty):",
+      "message": "Function `__init__` has parameters without hints: sku, name, price, qty.",
+      "verdict": {
+        "safe_to_autofix": false,
+        "risk_level": "medium",
+        "explanation": "Function parameters or return value have no type annotations. Correct hints need human understanding of the code, so this is never auto-fixed. (No API key; used the rule's default risk.)",
+        "suggested_fix": "",
+        "source": "fallback"
+      },
+      "status": "needs_review",
+      "status_detail": "Rule is review-only (no safe mechanical rewrite exists).",
+      "extra": {}
+    },
+    {
+      "rule_id": "PY007",
+      "language": "python",
+      "file": "python/shop/inventory.py",
+      "line": 12,
+      "column": 4,
+      "end_line": 13,
+      "snippet": "    def label(self):",
+      "message": "Function `label` has no return type.",
+      "verdict": {
+        "safe_to_autofix": false,
+        "risk_level": "medium",
+        "explanation": "Function parameters or return value have no type annotations. Correct hints need human understanding of the code, so this is never auto-fixed. (No API key; used the rule's default risk.)",
+        "suggested_fix": "",
+        "source": "fallback"
+      },
+      "status": "needs_review",
+      "status_detail": "Rule is review-only (no safe mechanical rewrite exists).",
+      "extra": {}
+    },
+    {
+      "rule_id": "PY001",
+      "language": "python",
+      "file": "python/shop/inventory.py",
+      "line": 13,
+      "column": 15,
+      "end_line": 13,
+      "snippet": "        return \"%s (%s) - $%.2f\" % (self.name, self.sku, self.price)",
+      "message": "String is formatted with the % operator.",
+      "verdict": {
+        "safe_to_autofix": true,
+        "risk_level": "low",
+        "explanation": "`\"Hello %s\" % name` should become an f-string: `f\"Hello {name}\"`. (No API key; used the rule's default risk.)",
+        "suggested_fix": "--- a/python/shop/inventory.py\n+++ b/python/shop/inventory.py\n@@ -10,7 +10,7 @@\n         self.qty = qty\n \n     def label(self):\n-        return \"%s (%s) - $%.2f\" % (self.name, self.sku, self.price)\n+        return f\"{self.name} ({self.sku}) - ${self.price:.2f}\"\n \n     def value(self):\n         return self.price * self.qty\n",
+        "source": "fallback"
+      },
+      "status": "auto_fixed",
+      "status_detail": "10 passed in 0.05s",
+      "extra": {
+        "proposed_diff": "--- a/python/shop/inventory.py\n+++ b/python/shop/inventory.py\n@@ -10,7 +10,7 @@\n         self.qty = qty\n \n     def label(self):\n-        return \"%s (%s) - $%.2f\" % (self.name, self.sku, self.price)\n+        return f\"{self.name} ({self.sku}) - ${self.price:.2f}\"\n \n     def value(self):\n         return self.price * self.qty\n"
+      }
+    },
+    {
+      "rule_id": "PY007",
+      "language": "python",
+      "file": "python/shop/inventory.py",
+      "line": 15,
+      "column": 4,
+      "end_line": 16,
+      "snippet": "    def value(self):",
+      "message": "Function `value` has no return type.",
+      "verdict": {
+        "safe_to_autofix": false,
+        "risk_level": "medium",
+        "explanation": "Function parameters or return value have no type annotations. Correct hints need human understanding of the code, so this is never auto-fixed. (No API key; used the rule's default risk.)",
+        "suggested_fix": "",
+        "source": "fallback"
+      },
+      "status": "needs_review",
+      "status_detail": "Rule is review-only (no safe mechanical rewrite exists).",
+      "extra": {}
+    },
+    {
+      "rule_id": "PY007",
+      "language": "python",
+      "file": "python/shop/inventory.py",
+      "line": 20,
+      "column": 4,
+      "end_line": 22,
+      "snippet": "    def __init__(self, sku, name, price, qty, days_left):",
+      "message": "Function `__init__` has parameters without hints: sku, name, price, qty, days_left.",
+      "verdict": {
+        "safe_to_autofix": false,
+        "risk_level": "medium",
+        "explanation": "Function parameters or return value have no type annotations. Correct hints need human understanding of the code, so this is never auto-fixed. (No API key; used the rule's default risk.)",
+        "suggested_fix": "",
+        "source": "fallback"
+      },
+      "status": "needs_review",
+      "status_detail": "Rule is review-only (no safe mechanical rewrite exists).",
+      "extra": {}
+    },
+    {
+      "rule_id": "PY005",
+      "language": "python",
+      "file": "python/shop/inventory.py",
+      "line": 21,
+      "column": 8,
+      "end_line": 21,
+      "snippet": "        super(PerishableProduct, self).__init__(sku, name, price, qty)",
+      "message": "Uses the two-argument form of super().",
+      "verdict": {
+        "safe_to_autofix": true,
+        "risk_level": "low",
+        "explanation": "`super(Foo, self).method()` can be written `super().method()` in Python 3. (No API key; used the rule's default risk.)",
+        "suggested_fix": "--- a/python/shop/inventory.py\n+++ b/python/shop/inventory.py\n@@ -18,7 +18,7 @@\n \n class PerishableProduct(Product):\n     def __init__(self, sku, name, price, qty, days_left):\n-        super(PerishableProduct, self).__init__(sku, name, price, qty)\n+        super().__init__(sku, name, price, qty)\n         self.days_left = days_left\n \n     def label(self):\n",
+        "source": "fallback"
+      },
+      "status": "auto_fixed",
+      "status_detail": "10 passed in 0.06s",
+      "extra": {
+        "proposed_diff": "--- a/python/shop/inventory.py\n+++ b/python/shop/inventory.py\n@@ -18,7 +18,7 @@\n \n class PerishableProduct(Product):\n     def __init__(self, sku, name, price, qty, days_left):\n-        super(PerishableProduct, self).__init__(sku, name, price, qty)\n+        super().__init__(sku, name, price, qty)\n         self.days_left = days_left\n \n     def label(self):\n"
+      }
+    },
+    {
+      "rule_id": "PY007",
+      "language": "python",
+      "file": "python/shop/inventory.py",
+      "line": 24,
+      "column": 4,
+      "end_line": 26,
+      "snippet": "    def label(self):",
+      "message": "Function `label` has no return type.",
+      "verdict": {
+        "safe_to_autofix": false,
+        "risk_level": "medium",
+        "explanation": "Function parameters or return value have no type annotations. Correct hints need human understanding of the code, so this is never auto-fixed. (No API key; used the rule's default risk.)",
+        "suggested_fix": "",
+        "source": "fallback"
+      },
+      "status": "needs_review",
+      "status_detail": "Rule is review-only (no safe mechanical rewrite exists).",
+      "extra": {}
+    },
+    {
+      "rule_id": "PY005",
+      "language": "python",
+      "file": "python/shop/inventory.py",
+      "line": 25,
+      "column": 15,
+      "end_line": 25,
+      "snippet": "        base = super(PerishableProduct, self).label()",
+      "message": "Uses the two-argument form of super().",
+      "verdict": {
+        "safe_to_autofix": true,
+        "risk_level": "low",
+        "explanation": "`super(Foo, self).method()` can be written `super().method()` in Python 3. (No API key; used the rule's default risk.)",
+        "suggested_fix": "--- a/python/shop/inventory.py\n+++ b/python/shop/inventory.py\n@@ -22,7 +22,7 @@\n         self.days_left = days_left\n \n     def label(self):\n-        base = super(PerishableProduct, self).label()\n+        base = super().label()\n         return \"%s [expires in %d days]\" % (base, self.days_left)\n \n \n",
+        "source": "fallback"
+      },
+      "status": "auto_fixed",
+      "status_detail": "10 passed in 0.06s",
+      "extra": {
+        "proposed_diff": "--- a/python/shop/inventory.py\n+++ b/python/shop/inventory.py\n@@ -22,7 +22,7 @@\n         self.days_left = days_left\n \n     def label(self):\n-        base = super(PerishableProduct, self).label()\n+        base = super().label()\n         return \"%s [expires in %d days]\" % (base, self.days_left)\n \n \n"
+      }
+    },
+    {
+      "rule_id": "PY001",
+      "language": "python",
+      "file": "python/shop/inventory.py",
+      "line": 26,
+      "column": 15,
+      "end_line": 26,
+      "snippet": "        return \"%s [expires in %d days]\" % (base, self.days_left)",
+      "message": "String is formatted with the % operator.",
+      "verdict": {
+        "safe_to_autofix": true,
+        "risk_level": "low",
+        "explanation": "`\"Hello %s\" % name` should become an f-string: `f\"Hello {name}\"`. (No API key; used the rule's default risk.)",
+        "suggested_fix": "--- a/python/shop/inventory.py\n+++ b/python/shop/inventory.py\n@@ -23,7 +23,7 @@\n \n     def label(self):\n         base = super(PerishableProduct, self).label()\n-        return \"%s [expires in %d days]\" % (base, self.days_left)\n+        return f\"{base} [expires in {self.days_left:d} days]\"\n \n \n class Inventory(object):\n",
+        "source": "fallback"
+      },
+      "status": "auto_fixed",
+      "status_detail": "10 passed in 0.05s",
+      "extra": {
+        "proposed_diff": "--- a/python/shop/inventory.py\n+++ b/python/shop/inventory.py\n@@ -23,7 +23,7 @@\n \n     def label(self):\n         base = super(PerishableProduct, self).label()\n-        return \"%s [expires in %d days]\" % (base, self.days_left)\n+        return f\"{base} [expires in {self.days_left:d} days]\"\n \n \n class Inventory(object):\n"
+      }
+    },
+    {
+      "rule_id": "PY004",
+      "language": "python",
+      "file": "python/shop/inventory.py",
+      "line": 29,
+      "column": 0,
+      "end_line": 46,
+      "snippet": "class Inventory(object):",
+      "message": "Class `Inventory` explicitly inherits from object.",
+      "verdict": {
+        "safe_to_autofix": true,
+        "risk_level": "low",
+        "explanation": "`class Foo(object):` is redundant in Python 3; use `class Foo:`. (No API key; used the rule's default risk.)",
+        "suggested_fix": "--- a/python/shop/inventory.py\n+++ b/python/shop/inventory.py\n@@ -26,7 +26,7 @@\n         return \"%s [expires in %d days]\" % (base, self.days_left)\n \n \n-class Inventory(object):\n+class Inventory:\n     def __init__(self):\n         self._items: Dict[str, Product] = {}\n \n",
+        "source": "fallback"
+      },
+      "status": "auto_fixed",
+      "status_detail": "10 passed in 0.06s",
+      "extra": {
+        "proposed_diff": "--- a/python/shop/inventory.py\n+++ b/python/shop/inventory.py\n@@ -26,7 +26,7 @@\n         return \"%s [expires in %d days]\" % (base, self.days_left)\n \n \n-class Inventory(object):\n+class Inventory:\n     def __init__(self):\n         self._items: Dict[str, Product] = {}\n \n"
+      }
+    },
+    {
+      "rule_id": "PY007",
+      "language": "python",
+      "file": "python/shop/inventory.py",
+      "line": 42,
+      "column": 4,
+      "end_line": 43,
+      "snippet": "    def total_value(self):",
+      "message": "Function `total_value` has no return type.",
+      "verdict": {
+        "safe_to_autofix": false,
+        "risk_level": "medium",
+        "explanation": "Function parameters or return value have no type annotations. Correct hints need human understanding of the code, so this is never auto-fixed. (No API key; used the rule's default risk.)",
+        "suggested_fix": "",
+        "source": "fallback"
+      },
+      "status": "needs_review",
+      "status_detail": "Rule is review-only (no safe mechanical rewrite exists).",
+      "extra": {}
+    },
+    {
+      "rule_id": "PY007",
+      "language": "python",
+      "file": "python/shop/inventory.py",
+      "line": 45,
+      "column": 4,
+      "end_line": 46,
+      "snippet": "    def low_stock(self, threshold):",
+      "message": "Function `low_stock` has parameters without hints: threshold; no return type.",
+      "verdict": {
+        "safe_to_autofix": false,
+        "risk_level": "medium",
+        "explanation": "Function parameters or return value have no type annotations. Correct hints need human understanding of the code, so this is never auto-fixed. (No API key; used the rule's default risk.)",
+        "suggested_fix": "",
+        "source": "fallback"
+      },
+      "status": "needs_review",
+      "status_detail": "Rule is review-only (no safe mechanical rewrite exists).",
+      "extra": {}
+    },
+    {
+      "rule_id": "PY004",
+      "language": "python",
+      "file": "python/shop/legacy_config.py",
+      "line": 7,
+      "column": 0,
+      "end_line": 20,
+      "snippet": "class LegacyConfig(object):",
+      "message": "Class `LegacyConfig` explicitly inherits from object.",
+      "verdict": {
+        "safe_to_autofix": true,
+        "risk_level": "low",
+        "explanation": "`class Foo(object):` is redundant in Python 3; use `class Foo:`. (No API key; used the rule's default risk.)",
+        "suggested_fix": "--- a/python/shop/legacy_config.py\n+++ b/python/shop/legacy_config.py\n@@ -4,7 +4,7 @@\n \"\"\"\n \n \n-class LegacyConfig(object):\n+class LegacyConfig:\n     def __init__(self, values):\n         self._values = dict(values)\n \n",
+        "source": "fallback"
+      },
+      "status": "auto_fixed",
+      "status_detail": "10 passed in 0.05s",
+      "extra": {
+        "proposed_diff": "--- a/python/shop/legacy_config.py\n+++ b/python/shop/legacy_config.py\n@@ -4,7 +4,7 @@\n \"\"\"\n \n \n-class LegacyConfig(object):\n+class LegacyConfig:\n     def __init__(self, values):\n         self._values = dict(values)\n \n"
+      }
+    },
+    {
+      "rule_id": "PY007",
+      "language": "python",
+      "file": "python/shop/legacy_config.py",
+      "line": 8,
+      "column": 4,
+      "end_line": 9,
+      "snippet": "    def __init__(self, values):",
+      "message": "Function `__init__` has parameters without hints: values.",
+      "verdict": {
+        "safe_to_autofix": false,
+        "risk_level": "medium",
+        "explanation": "Function parameters or return value have no type annotations. Correct hints need human understanding of the code, so this is never auto-fixed. (No API key; used the rule's default risk.)",
+        "suggested_fix": "",
+        "source": "fallback"
+      },
+      "status": "needs_review",
+      "status_detail": "Rule is review-only (no safe mechanical rewrite exists).",
+      "extra": {}
+    },
+    {
+      "rule_id": "PY007",
+      "language": "python",
+      "file": "python/shop/legacy_config.py",
+      "line": 11,
+      "column": 4,
+      "end_line": 12,
+      "snippet": "    def has_key(self, key):",
+      "message": "Function `has_key` has parameters without hints: key; no return type.",
+      "verdict": {
+        "safe_to_autofix": false,
+        "risk_level": "medium",
+        "explanation": "Function parameters or return value have no type annotations. Correct hints need human understanding of the code, so this is never auto-fixed. (No API key; used the rule's default risk.)",
+        "suggested_fix": "",
+        "source": "fallback"
+      },
+      "status": "needs_review",
+      "status_detail": "Rule is review-only (no safe mechanical rewrite exists).",
+      "extra": {}
+    },
+    {
+      "rule_id": "PY007",
+      "language": "python",
+      "file": "python/shop/legacy_config.py",
+      "line": 14,
+      "column": 4,
+      "end_line": 15,
+      "snippet": "    def __getitem__(self, key):",
+      "message": "Function `__getitem__` has parameters without hints: key; no return type.",
+      "verdict": {
+        "safe_to_autofix": false,
+        "risk_level": "medium",
+        "explanation": "Function parameters or return value have no type annotations. Correct hints need human understanding of the code, so this is never auto-fixed. (No API key; used the rule's default risk.)",
+        "suggested_fix": "",
+        "source": "fallback"
+      },
+      "status": "needs_review",
+      "status_detail": "Rule is review-only (no safe mechanical rewrite exists).",
+      "extra": {}
+    },
+    {
+      "rule_id": "PY007",
+      "language": "python",
+      "file": "python/shop/legacy_config.py",
+      "line": 17,
+      "column": 4,
+      "end_line": 20,
+      "snippet": "    def get(self, key, default=None):",
+      "message": "Function `get` has parameters without hints: key, default; no return type.",
+      "verdict": {
+        "safe_to_autofix": false,
+        "risk_level": "medium",
+        "explanation": "Function parameters or return value have no type annotations. Correct hints need human understanding of the code, so this is never auto-fixed. (No API key; used the rule's default risk.)",
+        "suggested_fix": "",
+        "source": "fallback"
+      },
+      "status": "needs_review",
+      "status_detail": "Rule is review-only (no safe mechanical rewrite exists).",
+      "extra": {}
+    },
+    {
+      "rule_id": "PY002",
+      "language": "python",
+      "file": "python/shop/legacy_config.py",
+      "line": 18,
+      "column": 11,
+      "end_line": 18,
+      "snippet": "        if self.has_key(key):",
+      "message": "Uses .has_key(), which Python 3 dicts do not have.",
+      "verdict": {
+        "safe_to_autofix": false,
+        "risk_level": "medium",
+        "explanation": "`d.has_key(k)` was removed from dict in Python 3; use `k in d`. (No API key; used the rule's default risk.)",
+        "suggested_fix": "--- a/python/shop/legacy_config.py\n+++ b/python/shop/legacy_config.py\n@@ -15,7 +15,7 @@\n         return self._values[key]\n \n     def get(self, key, default=None):\n-        if self.has_key(key):\n+        if key in self:\n             return self[key]\n         return default\n \n",
+        "source": "fallback"
+      },
+      "status": "needs_review",
+      "status_detail": "Judged unsafe to auto-apply (risk: medium).",
+      "extra": {
+        "proposed_diff": "--- a/python/shop/legacy_config.py\n+++ b/python/shop/legacy_config.py\n@@ -15,7 +15,7 @@\n         return self._values[key]\n \n     def get(self, key, default=None):\n-        if self.has_key(key):\n+        if key in self:\n             return self[key]\n         return default\n \n"
+      }
+    },
+    {
+      "rule_id": "PY007",
+      "language": "python",
+      "file": "python/shop/legacy_config.py",
+      "line": 23,
+      "column": 0,
+      "end_line": 27,
+      "snippet": "def load_flags(cfg):",
+      "message": "Function `load_flags` has parameters without hints: cfg; no return type.",
+      "verdict": {
+        "safe_to_autofix": false,
+        "risk_level": "medium",
+        "explanation": "Function parameters or return value have no type annotations. Correct hints need human understanding of the code, so this is never auto-fixed. (No API key; used the rule's default risk.)",
+        "suggested_fix": "",
+        "source": "fallback"
+      },
+      "status": "needs_review",
+      "status_detail": "Rule is review-only (no safe mechanical rewrite exists).",
+      "extra": {}
+    },
+    {
+      "rule_id": "PY002",
+      "language": "python",
+      "file": "python/shop/legacy_config.py",
+      "line": 25,
+      "column": 7,
+      "end_line": 25,
+      "snippet": "    if cfg.has_key(\"debug\"):",
+      "message": "Uses .has_key(), which Python 3 dicts do not have.",
+      "verdict": {
+        "safe_to_autofix": false,
+        "risk_level": "medium",
+        "explanation": "`d.has_key(k)` was removed from dict in Python 3; use `k in d`. (No API key; used the rule's default risk.)",
+        "suggested_fix": "--- a/python/shop/legacy_config.py\n+++ b/python/shop/legacy_config.py\n@@ -22,6 +22,6 @@\n \n def load_flags(cfg):\n     flags = {\"debug\": False}\n-    if cfg.has_key(\"debug\"):\n+    if \"debug\" in cfg:\n         flags[\"debug\"] = bool(cfg[\"debug\"])\n     return flags\n",
+        "source": "fallback"
+      },
+      "status": "needs_review",
+      "status_detail": "Judged unsafe to auto-apply (risk: medium).",
+      "extra": {
+        "proposed_diff": "--- a/python/shop/legacy_config.py\n+++ b/python/shop/legacy_config.py\n@@ -22,6 +22,6 @@\n \n def load_flags(cfg):\n     flags = {\"debug\": False}\n-    if cfg.has_key(\"debug\"):\n+    if \"debug\" in cfg:\n         flags[\"debug\"] = bool(cfg[\"debug\"])\n     return flags\n"
+      }
+    },
+    {
+      "rule_id": "PY007",
+      "language": "python",
+      "file": "python/shop/reports.py",
+      "line": 4,
+      "column": 0,
+      "end_line": 5,
+      "snippet": "def format_row(name, qty):",
+      "message": "Function `format_row` has parameters without hints: name, qty; no return type.",
+      "verdict": {
+        "safe_to_autofix": false,
+        "risk_level": "medium",
+        "explanation": "Function parameters or return value have no type annotations. Correct hints need human understanding of the code, so this is never auto-fixed. (No API key; used the rule's default risk.)",
+        "suggested_fix": "",
+        "source": "fallback"
+      },
+      "status": "needs_review",
+      "status_detail": "Rule is review-only (no safe mechanical rewrite exists).",
+      "extra": {}
+    },
+    {
+      "rule_id": "PY001",
+      "language": "python",
+      "file": "python/shop/reports.py",
+      "line": 5,
+      "column": 11,
+      "end_line": 5,
+      "snippet": "    return \"%-10s|%5d\" % (name, qty)",
+      "message": "String is formatted with the % operator.",
+      "verdict": {
+        "safe_to_autofix": true,
+        "risk_level": "low",
+        "explanation": "`\"Hello %s\" % name` should become an f-string: `f\"Hello {name}\"`. (No API key; used the rule's default risk.)",
+        "suggested_fix": "--- a/python/shop/reports.py\n+++ b/python/shop/reports.py\n@@ -2,7 +2,7 @@\n \n \n def format_row(name, qty):\n-    return \"%-10s|%5d\" % (name, qty)\n+    return f\"{name!s:<10}|{qty:5d}\"\n \n \n def average_stock(inventory):\n",
+        "source": "fallback"
+      },
+      "status": "auto_fixed",
+      "status_detail": "10 passed in 0.06s",
+      "extra": {
+        "proposed_diff": "--- a/python/shop/reports.py\n+++ b/python/shop/reports.py\n@@ -2,7 +2,7 @@\n \n \n def format_row(name, qty):\n-    return \"%-10s|%5d\" % (name, qty)\n+    return f\"{name!s:<10}|{qty:5d}\"\n \n \n def average_stock(inventory):\n"
+      }
+    },
+    {
+      "rule_id": "PY007",
+      "language": "python",
+      "file": "python/shop/reports.py",
+      "line": 8,
+      "column": 0,
+      "end_line": 11,
+      "snippet": "def average_stock(inventory):",
+      "message": "Function `average_stock` has parameters without hints: inventory; no return type.",
+      "verdict": {
+        "safe_to_autofix": false,
+        "risk_level": "medium",
+        "explanation": "Function parameters or return value have no type annotations. Correct hints need human understanding of the code, so this is never auto-fixed. (No API key; used the rule's default risk.)",
+        "suggested_fix": "",
+        "source": "fallback"
+      },
+      "status": "needs_review",
+      "status_detail": "Rule is review-only (no safe mechanical rewrite exists).",
+      "extra": {}
+    },
+    {
+      "rule_id": "PY001",
+      "language": "python",
+      "file": "python/shop/reports.py",
+      "line": 11,
+      "column": 11,
+      "end_line": 11,
+      "snippet": "    return \"Average stock: %d units\" % avg",
+      "message": "String is formatted with the % operator.",
+      "verdict": {
+        "safe_to_autofix": true,
+        "risk_level": "low",
+        "explanation": "`\"Hello %s\" % name` should become an f-string: `f\"Hello {name}\"`. (No API key; used the rule's default risk.)",
+        "suggested_fix": "--- a/python/shop/reports.py\n+++ b/python/shop/reports.py\n@@ -8,7 +8,7 @@\n def average_stock(inventory):\n     products = [inventory.find(sku) for sku in inventory.skus()]\n     avg = sum(p.qty for p in products) / len(products)\n-    return \"Average stock: %d units\" % avg\n+    return f\"Average stock: {avg:d} units\"\n \n \n def restock_ratio(current, target):\n",
+        "source": "fallback"
+      },
+      "status": "rolled_back",
+      "status_detail": "1 failed, 9 passed in 0.14s",
+      "extra": {
+        "proposed_diff": "--- a/python/shop/reports.py\n+++ b/python/shop/reports.py\n@@ -8,7 +8,7 @@\n def average_stock(inventory):\n     products = [inventory.find(sku) for sku in inventory.skus()]\n     avg = sum(p.qty for p in products) / len(products)\n-    return \"Average stock: %d units\" % avg\n+    return f\"Average stock: {avg:d} units\"\n \n \n def restock_ratio(current, target):\n",
+        "test_output": "_________________ test_average_stock_truncates_to_whole_units _________________\n\ninventory = <shop.inventory.Inventory object at 0x000002364B001190>\n\n    def test_average_stock_truncates_to_whole_units(inventory):\n        # (4 + 11 + 7) / 3 = 7.33 -> the report shows whole units\n>       assert average_stock(inventory) == \"Average stock: 7 units\"\n               ^^^^^^^^^^^^^^^^^^^^^^^^\n\npython\\tests\\test_reports.py:10: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _\n\ninventory = <shop.inventory.Inventory object at 0x000002364B001190>\n\n    def average_stock(inventory):\n        products = [inventory.find(sku) for sku in inventory.skus()]\n        avg = sum(p.qty for p in products) / len(products)\n>       return f\"Average stock: {avg:d} units\"\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nE       ValueError: Unknown format code 'd' for object of type 'float'\n\npython\\shop\\reports.py:11: ValueError\n=========================== short test summary info ===========================\nFAILED python\\tests\\test_reports.py::test_average_stock_truncates_to_whole_units\n1 failed, 9 passed in 0.14s"
+      }
+    },
+    {
+      "rule_id": "PY007",
+      "language": "python",
+      "file": "python/shop/reports.py",
+      "line": 14,
+      "column": 0,
+      "end_line": 18,
+      "snippet": "def restock_ratio(current, target):",
+      "message": "Function `restock_ratio` has parameters without hints: current, target; no return type.",
+      "verdict": {
+        "safe_to_autofix": false,
+        "risk_level": "medium",
+        "explanation": "Function parameters or return value have no type annotations. Correct hints need human understanding of the code, so this is never auto-fixed. (No API key; used the rule's default risk.)",
+        "suggested_fix": "",
+        "source": "fallback"
+      },
+      "status": "needs_review",
+      "status_detail": "Rule is review-only (no safe mechanical rewrite exists).",
+      "extra": {}
+    },
+    {
+      "rule_id": "PY003",
+      "language": "python",
+      "file": "python/shop/reports.py",
+      "line": 17,
+      "column": 4,
+      "end_line": 18,
+      "snippet": "    except:",
+      "message": "Bare `except:` also catches SystemExit and KeyboardInterrupt.",
+      "verdict": {
+        "safe_to_autofix": false,
+        "risk_level": "medium",
+        "explanation": "`except:` also catches SystemExit and KeyboardInterrupt; use `except Exception:`. (No API key; used the rule's default risk.)",
+        "suggested_fix": "--- a/python/shop/reports.py\n+++ b/python/shop/reports.py\n@@ -14,7 +14,7 @@\n def restock_ratio(current, target):\n     try:\n         return current / target\n-    except:\n+    except Exception:\n         return 0.0\n \n \n",
+        "source": "fallback"
+      },
+      "status": "needs_review",
+      "status_detail": "Judged unsafe to auto-apply (risk: medium).",
+      "extra": {
+        "proposed_diff": "--- a/python/shop/reports.py\n+++ b/python/shop/reports.py\n@@ -14,7 +14,7 @@\n def restock_ratio(current, target):\n     try:\n         return current / target\n-    except:\n+    except Exception:\n         return 0.0\n \n \n"
+      }
+    },
+    {
+      "rule_id": "PY007",
+      "language": "python",
+      "file": "python/shop/reports.py",
+      "line": 21,
+      "column": 0,
+      "end_line": 22,
+      "snippet": "def report_header(title, count):",
+      "message": "Function `report_header` has parameters without hints: title, count; no return type.",
+      "verdict": {
+        "safe_to_autofix": false,
+        "risk_level": "medium",
+        "explanation": "Function parameters or return value have no type annotations. Correct hints need human understanding of the code, so this is never auto-fixed. (No API key; used the rule's default risk.)",
+        "suggested_fix": "",
+        "source": "fallback"
+      },
+      "status": "needs_review",
+      "status_detail": "Rule is review-only (no safe mechanical rewrite exists).",
+      "extra": {}
+    },
+    {
+      "rule_id": "PY001",
+      "language": "python",
+      "file": "python/shop/reports.py",
+      "line": 22,
+      "column": 11,
+      "end_line": 22,
+      "snippet": "    return \"== %s (%d items) ==\" % (title, count)",
+      "message": "String is formatted with the % operator.",
+      "verdict": {
+        "safe_to_autofix": true,
+        "risk_level": "low",
+        "explanation": "`\"Hello %s\" % name` should become an f-string: `f\"Hello {name}\"`. (No API key; used the rule's default risk.)",
+        "suggested_fix": "--- a/python/shop/reports.py\n+++ b/python/shop/reports.py\n@@ -19,4 +19,4 @@\n \n \n def report_header(title, count):\n-    return \"== %s (%d items) ==\" % (title, count)\n+    return f\"== {title} ({count:d} items) ==\"\n",
+        "source": "fallback"
+      },
+      "status": "auto_fixed",
+      "status_detail": "10 passed in 0.06s",
+      "extra": {
+        "proposed_diff": "--- a/python/shop/reports.py\n+++ b/python/shop/reports.py\n@@ -19,4 +19,4 @@\n \n \n def report_header(title, count):\n-    return \"== %s (%d items) ==\" % (title, count)\n+    return f\"== {title} ({count:d} items) ==\"\n"
+      }
+    },
+    {
+      "rule_id": "RX004",
+      "language": "react",
+      "file": "react/components/Badge.jsx",
+      "line": 9,
+      "column": 0,
+      "end_line": 12,
+      "snippet": "Badge.defaultProps = {\n  color: \"grey\",\n  size: \"md\",\n};",
+      "message": "`Badge.defaultProps` should become default parameter values.",
+      "verdict": {
+        "safe_to_autofix": true,
+        "risk_level": "low",
+        "explanation": "`Comp.defaultProps = {...}` is deprecated for function components (removed in React 19). Use default values in the destructured props parameter. (No API key; used the rule's default risk.)",
+        "suggested_fix": "--- a/react/components/Badge.jsx\n+++ b/react/components/Badge.jsx\n@@ -1,12 +1,7 @@\n import React from \"react\";\n \n-export function Badge({ label, color, size }) {\n+export function Badge({ label, color = \"grey\", size = \"md\" }) {\n   return (\n     <span className={`badge badge-${color} badge-${size}`}>{label}</span>\n   );\n }\n-\n-Badge.defaultProps = {\n-  color: \"grey\",\n-  size: \"md\",\n-};\n",
+        "source": "fallback"
+      },
+      "status": "auto_fixed",
+      "status_detail": "7 passed, 7 total",
+      "extra": {
+        "proposed_diff": "--- a/react/components/Badge.jsx\n+++ b/react/components/Badge.jsx\n@@ -1,12 +1,7 @@\n import React from \"react\";\n \n-export function Badge({ label, color, size }) {\n+export function Badge({ label, color = \"grey\", size = \"md\" }) {\n   return (\n     <span className={`badge badge-${color} badge-${size}`}>{label}</span>\n   );\n }\n-\n-Badge.defaultProps = {\n-  color: \"grey\",\n-  size: \"md\",\n-};\n"
+      }
+    },
+    {
+      "rule_id": "RX001",
+      "language": "react",
+      "file": "react/components/Clock.jsx",
+      "line": 4,
+      "column": 0,
+      "end_line": 21,
+      "snippet": "export default class Clock extends React.Component {",
+      "message": "`Clock` is a class component (extends Component).",
+      "verdict": {
+        "safe_to_autofix": false,
+        "risk_level": "medium",
+        "explanation": "Class components should become function components with hooks. Simple render-only classes are converted automatically; classes with state or lifecycle methods need a human. (No API key; used the rule's default risk.)",
+        "suggested_fix": "",
+        "source": "fallback"
+      },
+      "status": "needs_review",
+      "status_detail": "Fixer declined: Class has more than render(): constructor, componentDidMount, componentWillUnmount - needs hooks designed by hand.",
+      "extra": {}
+    },
+    {
+      "rule_id": "RX002",
+      "language": "react",
+      "file": "react/components/Clock.jsx",
+      "line": 10,
+      "column": 2,
+      "end_line": 12,
+      "snippet": "  componentDidMount() {",
+      "message": "`Clock.componentDidMount` should become a useEffect hook.",
+      "verdict": {
+        "safe_to_autofix": false,
+        "risk_level": "medium",
+        "explanation": "componentDidMount / componentDidUpdate / componentWillUnmount map to useEffect, but the dependency array and cleanup must be designed by hand. (No API key; used the rule's default risk.)",
+        "suggested_fix": "",
+        "source": "fallback"
+      },
+      "status": "needs_review",
+      "status_detail": "Rule is review-only (no safe mechanical rewrite exists).",
+      "extra": {}
+    },
+    {
+      "rule_id": "RX002",
+      "language": "react",
+      "file": "react/components/Clock.jsx",
+      "line": 14,
+      "column": 2,
+      "end_line": 16,
+      "snippet": "  componentWillUnmount() {",
+      "message": "`Clock.componentWillUnmount` should become a useEffect hook.",
+      "verdict": {
+        "safe_to_autofix": false,
+        "risk_level": "medium",
+        "explanation": "componentDidMount / componentDidUpdate / componentWillUnmount map to useEffect, but the dependency array and cleanup must be designed by hand. (No API key; used the rule's default risk.)",
+        "suggested_fix": "",
+        "source": "fallback"
+      },
+      "status": "needs_review",
+      "status_detail": "Rule is review-only (no safe mechanical rewrite exists).",
+      "extra": {}
+    },
+    {
+      "rule_id": "RX001",
+      "language": "react",
+      "file": "react/components/Greeting.jsx",
+      "line": 4,
+      "column": 0,
+      "end_line": 14,
+      "snippet": "export default class Greeting extends Component {",
+      "message": "`Greeting` is a class component (extends Component).",
+      "verdict": {
+        "safe_to_autofix": false,
+        "risk_level": "medium",
+        "explanation": "Class components should become function components with hooks. Simple render-only classes are converted automatically; classes with state or lifecycle methods need a human. (No API key; used the rule's default risk.)",
+        "suggested_fix": "--- a/react/components/Greeting.jsx\n+++ b/react/components/Greeting.jsx\n@@ -1,14 +1,12 @@\n-import React, { Component } from \"react\";\n+import React from \"react\";\n \n // Render-only class component: a safe candidate for automatic conversion.\n-export default class Greeting extends Component {\n-  render() {\n-    const { name, excited } = this.props;\n-    return (\n-      <h1 className=\"greeting\">\n-        Hello, {name}\n-        {excited ? \"!\" : \".\"}\n-      </h1>\n-    );\n-  }\n+export default function Greeting(props) {\n+  const { name, excited } = props;\n+  return (\n+    <h1 className=\"greeting\">\n+      Hello, {name}\n+      {excited ? \"!\" : \".\"}\n+    </h1>\n+  );\n }\n",
+        "source": "fallback"
+      },
+      "status": "needs_review",
+      "status_detail": "Judged unsafe to auto-apply (risk: medium).",
+      "extra": {
+        "proposed_diff": "--- a/react/components/Greeting.jsx\n+++ b/react/components/Greeting.jsx\n@@ -1,14 +1,12 @@\n-import React, { Component } from \"react\";\n+import React from \"react\";\n \n // Render-only class component: a safe candidate for automatic conversion.\n-export default class Greeting extends Component {\n-  render() {\n-    const { name, excited } = this.props;\n-    return (\n-      <h1 className=\"greeting\">\n-        Hello, {name}\n-        {excited ? \"!\" : \".\"}\n-      </h1>\n-    );\n-  }\n+export default function Greeting(props) {\n+  const { name, excited } = props;\n+  return (\n+    <h1 className=\"greeting\">\n+      Hello, {name}\n+      {excited ? \"!\" : \".\"}\n+    </h1>\n+  );\n }\n"
+      }
+    },
+    {
+      "rule_id": "RX001",
+      "language": "react",
+      "file": "react/components/ProductList.jsx",
+      "line": 4,
+      "column": 0,
+      "end_line": 27,
+      "snippet": "export default class ProductList extends PureComponent {",
+      "message": "`ProductList` is a class component (extends PureComponent).",
+      "verdict": {
+        "safe_to_autofix": false,
+        "risk_level": "medium",
+        "explanation": "Class components should become function components with hooks. Simple render-only classes are converted automatically; classes with state or lifecycle methods need a human. (No API key; used the rule's default risk.)",
+        "suggested_fix": "",
+        "source": "fallback"
+      },
+      "status": "needs_review",
+      "status_detail": "Fixer declined: PureComponent skips re-renders on equal props; the equivalent needs React.memo, which changes the export.",
+      "extra": {}
+    },
+    {
+      "rule_id": "RX003",
+      "language": "react",
+      "file": "react/components/ProductList.jsx",
+      "line": 10,
+      "column": 2,
+      "end_line": 14,
+      "snippet": "  componentWillReceiveProps(nextProps) {",
+      "message": "`ProductList.componentWillReceiveProps` is an unsafe legacy lifecycle method.",
+      "verdict": {
+        "safe_to_autofix": false,
+        "risk_level": "high",
+        "explanation": "componentWillMount / componentWillReceiveProps / componentWillUpdate (and UNSAFE_ variants) are deprecated and unsafe with concurrent rendering. They usually need a redesign (derived state, effects, or memoisation). (No API key; used the rule's default risk.)",
+        "suggested_fix": "",
+        "source": "fallback"
+      },
+      "status": "needs_review",
+      "status_detail": "Rule is review-only (no safe mechanical rewrite exists).",
+      "extra": {}
+    },
+    {
+      "rule_id": "RX005",
+      "language": "react",
+      "file": "react/components/UserCard.jsx",
+      "line": 15,
+      "column": 0,
+      "end_line": 19,
+      "snippet": "UserCard.propTypes = {\n  user: PropTypes.shape({ id: PropTypes.number, name: PropTypes.string }).isRequired,\n  tags: PropTypes.arrayOf(PropTypes.string),\n  onSelect: PropTypes.func,\n};",
+      "message": "`UserCard.propTypes` uses runtime PropTypes checking.",
+      "verdict": {
+        "safe_to_autofix": false,
+        "risk_level": "low",
+        "explanation": "PropTypes are ignored by React 19 and are better expressed as TypeScript types. Migrating to TypeScript is a project-level decision, so this is flagged for review with a suggested interface. (No API key; used the rule's default risk.)",
+        "suggested_fix": "",
+        "source": "fallback"
+      },
+      "status": "needs_review",
+      "status_detail": "Rule is review-only (no safe mechanical rewrite exists).",
+      "extra": {}
+    },
+    {
+      "rule_id": "RX004",
+      "language": "react",
+      "file": "react/components/UserCard.jsx",
+      "line": 21,
+      "column": 0,
+      "end_line": 24,
+      "snippet": "UserCard.defaultProps = {\n  tags: [],\n  onSelect: () => {},\n};",
+      "message": "`UserCard.defaultProps` should become default parameter values.",
+      "verdict": {
+        "safe_to_autofix": true,
+        "risk_level": "low",
+        "explanation": "`Comp.defaultProps = {...}` is deprecated for function components (removed in React 19). Use default values in the destructured props parameter. (No API key; used the rule's default risk.)",
+        "suggested_fix": "--- a/react/components/UserCard.jsx\n+++ b/react/components/UserCard.jsx\n@@ -1,7 +1,7 @@\n import React from \"react\";\n import PropTypes from \"prop-types\";\n \n-const UserCard = ({ user, tags, onSelect }) => (\n+const UserCard = ({ user, tags = [], onSelect = () => {} }) => (\n   <div className=\"user-card\" onClick={() => onSelect(user.id)}>\n     <strong>{user.name}</strong>\n     <ul>\n@@ -18,9 +18,4 @@\n   onSelect: PropTypes.func,\n };\n \n-UserCard.defaultProps = {\n-  tags: [],\n-  onSelect: () => {},\n-};\n-\n export default UserCard;\n",
+        "source": "fallback"
+      },
+      "status": "auto_fixed",
+      "status_detail": "7 passed, 7 total",
+      "extra": {
+        "proposed_diff": "--- a/react/components/UserCard.jsx\n+++ b/react/components/UserCard.jsx\n@@ -1,7 +1,7 @@\n import React from \"react\";\n import PropTypes from \"prop-types\";\n \n-const UserCard = ({ user, tags, onSelect }) => (\n+const UserCard = ({ user, tags = [], onSelect = () => {} }) => (\n   <div className=\"user-card\" onClick={() => onSelect(user.id)}>\n     <strong>{user.name}</strong>\n     <ul>\n@@ -18,9 +18,4 @@\n   onSelect: PropTypes.func,\n };\n \n-UserCard.defaultProps = {\n-  tags: [],\n-  onSelect: () => {},\n-};\n-\n export default UserCard;\n"
+      }
+    }
+  ]
+}

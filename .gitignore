@@ -218,3 +218,9 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Metamorph
+node_modules/
+.metamorph_cache/
+metamorph_report.md
+metamorph_report.json
